@@ -1,3 +1,3 @@
 # Meme Central
 
-Made with Flutter and Firebase
+Made with Flutter and Firebase.
