@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "181324425711",
+    "firebase_url": "https://memecentral-mc.firebaseio.com",
+    "project_id": "memecentral-mc",
+    "storage_bucket": "memecentral-mc.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:181324425711:android:9852419f2c9edf0963ae1a",
+        "android_client_info": {
+          "package_name": "com.example.memecentral"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "181324425711-g3uum1r4p1uoqgdhop6jh4n2h8j3k72i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAq4ZZR2DZat-u7eaVL716XW1o7MFxLcq0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "181324425711-g3uum1r4p1uoqgdhop6jh4n2h8j3k72i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
