@@ -1,6 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:memecentral/navigation.dart';
-import 'package:memecentral/styles.dart';
+import 'package:memecentral/variables.dart';
 
 class SignUp extends StatefulWidget {
   @override
@@ -8,6 +9,30 @@ class SignUp extends StatefulWidget {
 }
 
 class _SignUpState extends State<SignUp> {
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  TextEditingController usernameController = TextEditingController();
+
+  registerUser() {
+    FirebaseAuth.instance
+        .createUserWithEmailAndPassword(
+          email: emailController.text,
+          password: passwordController.text,
+        )
+        .then(
+          (signedUser) => {
+            userCollection.add({
+              'email': emailController.text,
+              'username': usernameController.text,
+              'password': passwordController.text,
+              'uid': signedUser.user.uid,
+              'profilePicture': 'https://pbs.twimg.com/media/Ec30a19WsAEot7U.jpg',
+            }),
+            Navigator.pop(context)
+          },
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,18 +48,15 @@ class _SignUpState extends State<SignUp> {
               "Meme Central",
               style: fontStyle(35, Colors.orange, FontWeight.w700),
             ),
-            SizedBox(
-              height: 50,
-            ),
+            SizedBox(height: 50),
             Text(
               "Register",
               style: fontStyle(25, Colors.white, FontWeight.w600),
             ),
-            SizedBox(
-              height: 10,
-            ),
+            SizedBox(height: 10),
             Container(
               child: TextField(
+                controller: emailController,
                 decoration: InputDecoration(
                   fillColor: Colors.white,
                   filled: true,
@@ -50,6 +72,23 @@ class _SignUpState extends State<SignUp> {
             SizedBox(height: 15),
             Container(
               child: TextField(
+                controller: usernameController,
+                decoration: InputDecoration(
+                  fillColor: Colors.white,
+                  filled: true,
+                  hintText: 'Username',
+                  hintStyle: fontStyle(20),
+                  prefixIcon: Icon(Icons.account_circle),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 15),
+            Container(
+              child: TextField(
+                controller: passwordController,
                 decoration: InputDecoration(
                   fillColor: Colors.white,
                   filled: true,
@@ -78,23 +117,24 @@ class _SignUpState extends State<SignUp> {
               ),
             ),
             SizedBox(height: 15),
-            Container(
-              width: MediaQuery.of(context).size.width / 2,
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.orange,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Center(
-                child: Text(
-                  "Sign up",
-                  style: fontStyle(20, Colors.white, FontWeight.w700),
+            InkWell(
+              onTap: () => registerUser(),
+              child: Container(
+                width: MediaQuery.of(context).size.width / 2,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Center(
+                  child: Text(
+                    "Sign up",
+                    style: fontStyle(20, Colors.white, FontWeight.w700),
+                  ),
                 ),
               ),
             ),
-            SizedBox(
-              height: 15,
-            ),
+            SizedBox(height: 15),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -102,9 +142,7 @@ class _SignUpState extends State<SignUp> {
                   "Already have an account?",
                   style: fontStyle(20, Colors.grey[500]),
                 ),
-                SizedBox(
-                  width: 8,
-                ),
+                SizedBox(width: 8),
                 InkWell(
                   onTap: () => Navigator.push(
                     context,
@@ -119,9 +157,7 @@ class _SignUpState extends State<SignUp> {
                 ),
               ],
             ),
-            SizedBox(
-              height: 20,
-            ),
+            SizedBox(height: 20),
           ],
         ),
       ),
