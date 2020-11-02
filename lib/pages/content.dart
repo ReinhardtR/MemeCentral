@@ -1,3 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:esys_flutter_share/esys_flutter_share.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:memecentral/variables.dart';
 
@@ -7,7 +15,16 @@ class ContentPage extends StatefulWidget {
 }
 
 class _ContentPageState extends State<ContentPage> {
-  buildProfile() {
+  Stream stream;
+  String uid;
+
+  initState() {
+    super.initState();
+    uid = FirebaseAuth.instance.currentUser.uid;
+    stream = contentCollection.snapshots();
+  }
+
+  buildProfile(String url) {
     return Container(
       width: 60,
       height: 60,
@@ -28,7 +45,7 @@ class _ContentPageState extends State<ContentPage> {
                 child: Image(
                   fit: BoxFit.cover,
                   image: NetworkImage(
-                    'https://pbs.twimg.com/media/Ec30a19WsAEot7U.jpg',
+                    url,
                   ),
                 ),
               ),
@@ -52,146 +69,211 @@ class _ContentPageState extends State<ContentPage> {
     );
   }
 
+  likePost(String id) async {
+    String uid = FirebaseAuth.instance.currentUser.uid;
+    DocumentSnapshot doc = await contentCollection.doc(id).get();
+    if (doc.data()['likes'].contains(uid)) {
+      contentCollection.doc(id).update({
+        'likes': FieldValue.arrayRemove([uid]),
+      });
+    } else {
+      contentCollection.doc(id).update({
+        'likes': FieldValue.arrayUnion([uid]),
+      });
+    }
+  }
+
+  sharePost(String content, String id) async {
+    var request = await HttpClient().getUrl(Uri.parse(content));
+    var response = await request.close();
+    Uint8List bytes = await consolidateHttpClientResponseBytes(response);
+    await Share.file('MemeCentral', 'Image.jpeg', bytes, 'image/jpeg');
+    DocumentSnapshot doc = await contentCollection.doc(id).get();
+    contentCollection.doc(id).update({
+      'shareCount': doc.data()['shareCount'] + 1,
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
     return Scaffold(
-      body: Stack(
-        children: [
-          // meme
-          Container(
-            width: size.width,
-            height: size.height,
-            decoration: BoxDecoration(
-              color: Colors.black,
-            ),
-          ),
-          Column(
-            children: [
-              // Top Section
-              Container(
-                height: 100,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      "Following",
-                      style: fontStyle(17, Colors.white, FontWeight.bold),
-                    ),
-                    SizedBox(width: 7.5),
-                    Text(
-                      "|",
-                      style: fontStyle(17, Colors.white, FontWeight.bold),
-                    ),
-                    SizedBox(width: 7.5),
-                    Text(
-                      "Recommended",
-                      style: fontStyle(17, Colors.white, FontWeight.bold),
-                    ),
-                    SizedBox(width: 7.5),
-                    Text(
-                      "|",
-                      style: fontStyle(17, Colors.white, FontWeight.bold),
-                    ),
-                    SizedBox(width: 7.5),
-                    Text(
-                      "Trending",
-                      style: fontStyle(17, Colors.white, FontWeight.bold),
-                    ),
-                  ],
+      body: StreamBuilder(
+          stream: stream,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+            return PageView.builder(
+                itemCount: snapshot.data.docs.length,
+                controller: PageController(
+                  initialPage: 0,
+                  viewportFraction: 1,
                 ),
-              ),
-
-              // Bottom Section
-              Expanded(
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    // Left Side
-                    Expanded(
-                      child: Container(
-                        height: 70,
-                        padding: EdgeInsets.only(left: 20),
-                        margin: EdgeInsets.only(bottom: 5),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Text(
-                              "@Reinhardt",
-                              style: fontStyle(16, Colors.white, FontWeight.bold),
-                            ),
-                            Text(
-                              "Look at the top of his head",
-                              style: fontStyle(16, Colors.white, FontWeight.normal),
-                            ),
-                            Row(
+                scrollDirection: Axis.vertical,
+                itemBuilder: (context, index) {
+                  DocumentSnapshot content = snapshot.data.docs[index];
+                  return Stack(
+                    children: [
+                      // Content
+                      Center(
+                        child: Image.network(
+                          content.data()['contentURL'],
+                          width: size.width,
+                          fit: BoxFit.fill,
+                        ),
+                      ),
+                      Column(
+                        children: [
+                          // Top Section
+                          Container(
+                            height: 100,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  "#123  -  #abc  -  #wasd",
-                                  style: fontStyle(14, Colors.white, FontWeight.normal, FontStyle.italic),
+                                  "Following",
+                                  style: fontStyle(17, Colors.white, FontWeight.bold),
+                                ),
+                                SizedBox(width: 7.5),
+                                Text(
+                                  "|",
+                                  style: fontStyle(17, Colors.white, FontWeight.bold),
+                                ),
+                                SizedBox(width: 7.5),
+                                Text(
+                                  "Recommended",
+                                  style: fontStyle(17, Colors.white, FontWeight.bold),
+                                ),
+                                SizedBox(width: 7.5),
+                                Text(
+                                  "|",
+                                  style: fontStyle(17, Colors.white, FontWeight.bold),
+                                ),
+                                SizedBox(width: 7.5),
+                                Text(
+                                  "Trending",
+                                  style: fontStyle(17, Colors.white, FontWeight.bold),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
+                          ),
 
-                    // Right Side
-                    Container(
-                      width: 100,
-                      margin: EdgeInsets.only(top: 150),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          buildProfile(),
-                          // Likes
-                          Column(
-                            children: [
-                              Icon(Icons.favorite, size: 30, color: Colors.white),
-                              SizedBox(height: 7),
-                              Text(
-                                "10",
-                                style: fontStyle(14, Colors.white),
-                              ),
-                            ],
-                          ),
-                          // Comments
-                          Column(
-                            children: [
-                              Icon(Icons.comment, size: 30, color: Colors.white),
-                              SizedBox(height: 7),
-                              Text(
-                                "5",
-                                style: fontStyle(14, Colors.white),
-                              ),
-                            ],
-                          ),
-                          // Share
-                          Column(
-                            children: [
-                              Icon(Icons.reply, size: 30, color: Colors.white),
-                              SizedBox(height: 7),
-                              Text(
-                                "3",
-                                style: fontStyle(14, Colors.white),
-                              ),
-                            ],
-                          ),
+                          // Bottom Section
+                          Expanded(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                // Left Side
+                                Expanded(
+                                  child: Container(
+                                    height: 70,
+                                    padding: EdgeInsets.only(left: 20),
+                                    margin: EdgeInsets.only(bottom: 5),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        Text(
+                                          content.data()['username'],
+                                          style: fontStyle(16, Colors.white, FontWeight.normal),
+                                        ),
+                                        Text(
+                                          content.data()['caption'],
+                                          style: fontStyle(16, Colors.white, FontWeight.normal),
+                                        ),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              content.data()['category'],
+                                              style: fontStyle(14, Colors.white, FontWeight.normal, FontStyle.italic),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                                // Right Side
+                                Container(
+                                  width: 100,
+                                  margin: EdgeInsets.only(top: MediaQuery.of(context).size.height / 3),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      buildProfile(content.data()['profilePicture']),
+                                      // Likes
+                                      Column(
+                                        children: [
+                                          InkWell(
+                                            onTap: () => likePost(content.data()['id']),
+                                            child: Icon(
+                                              Icons.favorite,
+                                              size: 30,
+                                              color: content.data()['likes'].contains(uid) ? Colors.red : Colors.white,
+                                            ),
+                                          ),
+                                          SizedBox(height: 7),
+                                          Text(
+                                            content.data()['likes'].length.toString(),
+                                            style: fontStyle(14, Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                      // Comments
+                                      Column(
+                                        children: [
+                                          InkWell(
+                                            onTap: () => ,
+                                            child: Icon(
+                                              Icons.comment,
+                                              size: 30,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          SizedBox(height: 7),
+                                          Text(
+                                            "5",
+                                            style: fontStyle(14, Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                      // Share
+                                      Column(
+                                        children: [
+                                          InkWell(
+                                            onTap: () => sharePost(content.data()['contentURL'], content.data()['id']),
+                                            child: Icon(
+                                              Icons.reply,
+                                              size: 30,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          SizedBox(height: 7),
+                                          Text(
+                                            content.data()['shareCount'].toString(),
+                                            style: fontStyle(14, Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              )
-            ],
-          ),
-        ],
-      ),
+                    ],
+                  );
+                });
+          }),
     );
   }
 }

@@ -16,6 +16,7 @@ class _NavigationPageState extends State<NavigationPage> {
     FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null) {
         setState(() {
+          print(user);
           signedIn = true;
         });
       } else {

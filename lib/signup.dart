@@ -21,7 +21,7 @@ class _SignUpState extends State<SignUp> {
         )
         .then(
           (signedUser) => {
-            userCollection.add({
+            userCollection.doc(signedUser.user.uid).set({
               'email': emailController.text,
               'username': usernameController.text,
               'password': passwordController.text,
