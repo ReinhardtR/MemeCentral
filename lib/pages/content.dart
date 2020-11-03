@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -7,6 +6,7 @@ import 'package:esys_flutter_share/esys_flutter_share.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:memecentral/pages/comments.dart';
 import 'package:memecentral/variables.dart';
 
 class ContentPage extends StatefulWidget {
@@ -230,7 +230,14 @@ class _ContentPageState extends State<ContentPage> {
                                       Column(
                                         children: [
                                           InkWell(
-                                            onTap: () => ,
+                                            onTap: () => Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => CommentsPage(
+                                                  content.data()['id'],
+                                                ),
+                                              ),
+                                            ),
                                             child: Icon(
                                               Icons.comment,
                                               size: 30,
@@ -239,7 +246,7 @@ class _ContentPageState extends State<ContentPage> {
                                           ),
                                           SizedBox(height: 7),
                                           Text(
-                                            "5",
+                                            content.data()['commentCount'].toString(),
                                             style: fontStyle(14, Colors.white),
                                           ),
                                         ],

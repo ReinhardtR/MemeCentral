@@ -13,10 +13,10 @@ class _NavigationPageState extends State<NavigationPage> {
   bool signedIn = false;
   initState() {
     super.initState();
-    FirebaseAuth.instance.authStateChanges().listen((user) {
+    FirebaseAuth.instance.authStateChanges().listen((User user) {
+      print(user);
       if (user != null) {
         setState(() {
-          print(user);
           signedIn = true;
         });
       } else {

@@ -24,11 +24,11 @@ class _SignUpState extends State<SignUp> {
             userCollection.doc(signedUser.user.uid).set({
               'email': emailController.text,
               'username': usernameController.text,
-              'password': passwordController.text,
               'uid': signedUser.user.uid,
               'profilePicture': 'https://pbs.twimg.com/media/Ec30a19WsAEot7U.jpg',
             }),
-            Navigator.pop(context)
+            Navigator.pop(context),
+            print(signedUser.user.uid),
           },
         );
   }
