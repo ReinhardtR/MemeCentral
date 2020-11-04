@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'pages/content.dart';
 import 'pages/discover.dart';
@@ -16,7 +17,7 @@ class _HomePageState extends State<HomePage> {
     DiscoverPage(),
     UploadPage(),
     InboxPage(),
-    ProfilePage(),
+    ProfilePage(FirebaseAuth.instance.currentUser.uid),
   ];
 
   int page = 0;
