@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:memecentral/pages/content.dart';
 import 'package:memecentral/variables.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -42,7 +43,6 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       dataRecieved = true;
     });
-    print("STATE" + dataRecieved.toString());
   }
 
   @override
@@ -180,7 +180,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => ProfileContentPage(),
+                                      builder: (context) => ContentPage(snapshot.data, index),
                                     ),
                                   ),
                                   child: Container(

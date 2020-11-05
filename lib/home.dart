@@ -13,7 +13,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List pageOptions = [
-    ContentPage(),
+    ContentPage(null, null),
     DiscoverPage(),
     UploadPage(),
     InboxPage(),

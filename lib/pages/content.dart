@@ -10,6 +10,10 @@ import 'package:memecentral/pages/comments.dart';
 import 'package:memecentral/variables.dart';
 
 class ContentPage extends StatefulWidget {
+  final QuerySnapshot contentList;
+  final int contentIndex;
+  ContentPage(this.contentList, this.contentIndex);
+
   @override
   _ContentPageState createState() => _ContentPageState();
 }
@@ -107,9 +111,9 @@ class _ContentPageState extends State<ContentPage> {
               );
             }
             return PageView.builder(
-                itemCount: snapshot.data.docs.length,
+                itemCount: widget.contentList == null ? snapshot.data.docs.length : widget.contentList.docs.length,
                 controller: PageController(
-                  initialPage: 0,
+                  initialPage: widget.contentIndex == null ? 0 : widget.contentIndex,
                   viewportFraction: 1,
                 ),
                 scrollDirection: Axis.vertical,
