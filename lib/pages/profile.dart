@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:memecentral/pages/content.dart';
 import 'package:memecentral/variables.dart';
@@ -13,11 +14,15 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool dataRecieved = false;
+  bool isFollowing = false;
 
   String username;
   String profilePicture;
   int likes = 0;
+  int followers = 0;
+  int following = 0;
   Future userContent;
+
   String onlineUser;
 
   @override
@@ -27,14 +32,39 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   getData() async {
-    // Content
+    // Get Online User
+    onlineUser = FirebaseAuth.instance.currentUser.uid;
+
+    // Get Followers and Following
+    var followersDocument = await userCollection.doc(widget.uid).collection('followers').get();
+    var followingDocument = await userCollection.doc(widget.uid).collection('following').get();
+    followers = followersDocument.docs.length;
+    following = followingDocument.docs.length;
+
+    // Get Follow State
+    userCollection.doc(widget.uid).collection('followers').doc(onlineUser).get().then(
+      (document) {
+        if (document.exists) {
+          setState(() {
+            isFollowing = true;
+          });
+        } else {
+          setState(() {
+            isFollowing = false;
+          });
+        }
+      },
+    );
+
+    // Get Content
     userContent = contentCollection.where('uid', isEqualTo: widget.uid).get();
 
-    // User Data
+    // Get User Data
     DocumentSnapshot userDoc = await userCollection.doc(widget.uid).get();
     username = userDoc.data()['username'];
     profilePicture = userDoc.data()['profilePicture'];
 
+    // Get Likes
     var documents = await userContent;
     for (var item in documents.docs) {
       likes = item.data()['likes'].length + likes;
@@ -43,6 +73,26 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       dataRecieved = true;
     });
+  }
+
+  followUser() async {
+    var document = await userCollection.doc(widget.uid).collection('followers').doc(onlineUser).get();
+
+    if (!document.exists) {
+      userCollection.doc(widget.uid).collection('followers').doc(onlineUser).set({});
+      userCollection.doc(onlineUser).collection('following').doc(widget.uid).set({});
+      setState(() {
+        isFollowing = true;
+        followers++;
+      });
+    } else {
+      userCollection.doc(widget.uid).collection('followers').doc(onlineUser).delete();
+      userCollection.doc(onlineUser).collection('following').doc(widget.uid).delete();
+      setState(() {
+        isFollowing = false;
+        followers--;
+      });
+    }
   }
 
   @override
@@ -77,7 +127,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             Column(
                               children: [
                                 Text(
-                                  "78",
+                                  followers.toString(),
                                   style: fontStyle(20, Colors.grey[900], FontWeight.w500),
                                 ),
                                 Text(
@@ -111,7 +161,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             Column(
                               children: [
                                 Text(
-                                  "34",
+                                  following.toString(),
                                   style: fontStyle(20, Colors.grey[900], FontWeight.w500),
                                 ),
                                 Text(
@@ -124,23 +174,41 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       SizedBox(height: 30),
-                      InkWell(
-                        onTap: () => {},
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[900],
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          width: MediaQuery.of(context).size.width / 2,
-                          height: 40,
-                          child: Center(
-                            child: Text(
-                              "Edit profile",
-                              style: fontStyle(20, Colors.white, FontWeight.w600),
+                      onlineUser == widget.uid
+                          ? InkWell(
+                              onTap: () => {},
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[900],
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                width: MediaQuery.of(context).size.width / 2,
+                                height: 40,
+                                child: Center(
+                                  child: Text(
+                                    "Edit profile",
+                                    style: fontStyle(20, Colors.white, FontWeight.w600),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : InkWell(
+                              onTap: () => followUser(),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[900],
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                width: MediaQuery.of(context).size.width / 2,
+                                height: 40,
+                                child: Center(
+                                  child: Text(
+                                    isFollowing == false ? "Follow" : "Unfollow",
+                                    style: fontStyle(20, Colors.white, FontWeight.w600),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ),
                       SizedBox(height: 20),
                       Container(
                         margin: EdgeInsets.only(left: 30, right: 30),
@@ -160,7 +228,25 @@ class _ProfilePageState extends State<ProfilePage> {
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) {
                             return Center(child: CircularProgressIndicator());
+                          } else if (snapshot.data.docs.length == 0) {
+                            return Container(
+                              height: 200,
+                              width: MediaQuery.of(context).size.width,
+                              padding: EdgeInsets.only(top: 5),
+                              decoration: BoxDecoration(color: Colors.grey[900]),
+                              child: Center(
+                                child: Container(
+                                  width: MediaQuery.of(context).size.width * 0.8,
+                                  child: Text(
+                                    "$username haven't uploaded any memes.",
+                                    style: fontStyle(20, Colors.white, FontWeight.w800),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            );
                           }
+                          print(snapshot.data.docs);
                           return Container(
                             padding: EdgeInsets.only(top: 5),
                             decoration: BoxDecoration(color: Colors.grey[900]),

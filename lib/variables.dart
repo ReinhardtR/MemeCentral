@@ -4,12 +4,25 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // Styles
-fontStyle(double size, [Color color, FontWeight fw = FontWeight.w700, FontStyle fs]) {
+fontStyle(double size,
+    [Color color,
+    FontWeight fw = FontWeight.w700,
+    FontStyle fs,
+    Offset offset = Offset.zero,
+    double blurRadius = 0.0,
+    Color shadowColor = Colors.black]) {
   return GoogleFonts.montserrat(
     fontSize: size,
     fontWeight: fw,
     fontStyle: fs,
     color: color,
+    shadows: [
+      Shadow(
+        offset: offset,
+        blurRadius: blurRadius,
+        color: shadowColor,
+      ),
+    ],
   );
 }
 

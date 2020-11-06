@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:memecentral/pages/profile.dart';
 import 'package:memecentral/variables.dart';
 
 class DiscoverPage extends StatefulWidget {
@@ -61,15 +62,23 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     DocumentSnapshot user = snapshot.data.docs[index];
                     return Column(
                       children: [
-                        ListTile(
-                          leading: Icon(Icons.search, color: Colors.white, size: 30),
-                          trailing: CircleAvatar(
-                            backgroundColor: Colors.white,
-                            backgroundImage: NetworkImage(user.data()['profilePicture']),
+                        InkWell(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProfilePage(user.data()['uid']),
+                            ),
                           ),
-                          title: Text(
-                            user.data()['username'],
-                            style: fontStyle(22, Colors.white),
+                          child: ListTile(
+                            leading: Icon(Icons.search, color: Colors.white, size: 30),
+                            trailing: CircleAvatar(
+                              backgroundColor: Colors.white,
+                              backgroundImage: NetworkImage(user.data()['profilePicture']),
+                            ),
+                            title: Text(
+                              user.data()['username'],
+                              style: fontStyle(22, Colors.white),
+                            ),
                           ),
                         ),
                         Divider(),
