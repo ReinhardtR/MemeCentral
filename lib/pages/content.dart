@@ -21,56 +21,12 @@ class ContentPage extends StatefulWidget {
 class _ContentPageState extends State<ContentPage> {
   Stream stream;
   String uid;
+  bool isFollowing;
 
   initState() {
     super.initState();
     uid = FirebaseAuth.instance.currentUser.uid;
     stream = contentCollection.snapshots();
-  }
-
-  buildProfile(String url) {
-    return Container(
-      width: 60,
-      height: 60,
-      child: Stack(
-        children: [
-          Positioned(
-            left: (60 / 2) - (50 / 2),
-            child: Container(
-              width: 50,
-              height: 50,
-              padding: EdgeInsets.all(1),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(25),
-                child: Image(
-                  fit: BoxFit.cover,
-                  image: NetworkImage(
-                    url,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: (60 / 2) - (20 / 2),
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: Colors.lightBlue,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Icon(Icons.add, color: Colors.white, size: 20),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   likePost(String id) async {
@@ -98,235 +54,250 @@ class _ContentPageState extends State<ContentPage> {
     });
   }
 
+  followState(String postUid) async {
+    DocumentSnapshot doc = await userCollection.doc(uid).collection('following').doc(postUid).get();
+    if (doc.exists) {
+      setState(() {
+        isFollowing = true;
+      });
+      return true;
+    } else {
+      setState(() {
+        isFollowing = false;
+      });
+      return false;
+    }
+  }
+
+  followUser(String postUid) async {
+    if (await followState(postUid)) {
+      userCollection.doc(postUid).collection('followers').doc(uid).delete();
+      userCollection.doc(uid).collection('following').doc(postUid).delete();
+      setState(() {
+        isFollowing = false;
+      });
+    } else {
+      userCollection.doc(postUid).collection('followers').doc(uid).set({});
+      userCollection.doc(uid).collection('following').doc(postUid).set({});
+      setState(() {
+        isFollowing = true;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    var size = MediaQuery.of(context).size;
     return Container(
       child: SafeArea(
         child: Scaffold(
           body: StreamBuilder(
-              stream: stream,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-                return PageView.builder(
-                    itemCount: widget.contentList == null ? snapshot.data.docs.length : widget.contentList.docs.length,
-                    controller: PageController(
-                      initialPage: widget.contentIndex == null ? 0 : widget.contentIndex,
-                      viewportFraction: 1,
-                    ),
-                    scrollDirection: Axis.vertical,
-                    itemBuilder: (context, index) {
-                      DocumentSnapshot content = snapshot.data.docs[index];
-                      return Container(
-                        color: Colors.black,
-                        child: Stack(
-                          children: [
-                            Container(
-                              alignment: Alignment.topCenter,
-                              height: 70,
-                              color: Colors.black,
-                              child: Row(
+            stream: stream,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+              return PageView.builder(
+                itemCount: widget.contentList == null ? snapshot.data.docs.length : widget.contentList.docs.length,
+                controller: PageController(
+                  initialPage: widget.contentIndex == null ? 0 : widget.contentIndex,
+                  viewportFraction: 1,
+                ),
+                scrollDirection: Axis.vertical,
+                itemBuilder: (context, index) {
+                  DocumentSnapshot content = snapshot.data.docs[index];
+                  followState(content.data()['uid']);
+                  return Container(
+                    color: Colors.black,
+                    child: Column(
+                      children: [
+                        // Top UI
+                        Container(
+                          alignment: Alignment.bottomLeft,
+                          height: 64,
+                          padding: EdgeInsets.all(10),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              FittedBox(
+                                fit: BoxFit.cover,
+                                child: CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.white,
+                                  child: CircleAvatar(
+                                    radius: 35,
+                                    backgroundImage: NetworkImage(
+                                      content.data()['profilePicture'],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      content.data()['username'],
+                                      style: fontStyle(16, Colors.white, FontWeight.bold),
+                                    ),
+                                    Text(
+                                      content.data()['caption'],
+                                      style: fontStyle(16, Colors.white, FontWeight.normal),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              VerticalDivider(
+                                thickness: 1,
+                                color: Colors.white,
+                              ),
+                              Column(
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  buildProfile(content.data()['profilePicture']),
-                                  InkWell(
-                                    child: Icon(
-                                      Icons.favorite_rounded,
-                                      color: Colors.white,
-                                      size: 40,
-                                    ),
-                                  ),
-                                  InkWell(
-                                    child: Icon(
-                                      Icons.comment_rounded,
-                                      color: Colors.white,
-                                      size: 40,
-                                    ),
-                                  ),
-                                  InkWell(
-                                    child: Icon(
-                                      Icons.share_rounded,
-                                      color: Colors.white,
-                                      size: 40,
-                                    ),
+                                  Text(
+                                    content.data()['category'],
+                                    style: fontStyle(14, Colors.white, FontWeight.normal, FontStyle.italic),
                                   ),
                                 ],
                               ),
+                            ],
+                          ),
+                        ),
+                        Divider(
+                          color: Colors.white,
+                          thickness: 1,
+                          height: 0,
+                        ),
+                        // Content
+                        Expanded(
+                          child: Center(
+                            child: Image.network(
+                              content.data()['contentURL'],
                             ),
-                            // Content
-                            Center(
-                              child: Image.network(
-                                content.data()['contentURL'],
-                                width: size.width,
-                                fit: BoxFit.fill,
-                              ),
-                            ),
-                            Column(
+                          ),
+                        ),
+                        // Bottom UI
+                        Divider(
+                          color: Colors.white,
+                          thickness: 1,
+                          height: 0,
+                        ),
+                        // Post Stats
+                        Container(
+                          alignment: Alignment.bottomCenter,
+                          padding: EdgeInsets.all(8),
+                          margin: EdgeInsets.only(left: 8, right: 8),
+                          color: Colors.black,
+                          child: IntrinsicHeight(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                // Top Section
                                 Container(
-                                  height: 100,
+                                  child: InkWell(
+                                    onTap: () => followUser(content.data()['uid']),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          isFollowing == true
+                                              ? Icons.check_circle_rounded
+                                              : Icons.highlight_off_rounded,
+                                          size: 30,
+                                          color: Colors.white,
+                                        ),
+                                        SizedBox(width: 5),
+                                        Text(
+                                          isFollowing == true ? "Unfollow" : "Follow",
+                                          style: fontStyle(14, Colors.white),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                VerticalDivider(
+                                  color: Colors.white,
+                                  thickness: 1,
+                                  width: 32,
+                                ),
+                                Expanded(
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        "Following",
-                                        style: fontStyle(17, Colors.white, FontWeight.bold),
+                                      Row(
+                                        children: [
+                                          InkWell(
+                                            onTap: () => likePost(content.data()['id']),
+                                            child: Icon(Icons.favorite,
+                                                size: 30,
+                                                color:
+                                                    content.data()['likes'].contains(uid) ? Colors.red : Colors.white),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            content.data()['likes'].length.toString(),
+                                            style: fontStyle(18, Colors.white),
+                                          ),
+                                        ],
                                       ),
-                                      SizedBox(width: 7.5),
-                                      Text(
-                                        "|",
-                                        style: fontStyle(17, Colors.white, FontWeight.bold),
+                                      Row(
+                                        children: [
+                                          InkWell(
+                                            onTap: () => Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => CommentsPage(
+                                                  content.data()['id'],
+                                                ),
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              Icons.comment_rounded,
+                                              color: Colors.white,
+                                              size: 30,
+                                            ),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            content.data()['commentCount'].toString(),
+                                            style: fontStyle(20, Colors.white),
+                                          ),
+                                        ],
                                       ),
-                                      SizedBox(width: 7.5),
-                                      Text(
-                                        "Recommended",
-                                        style: fontStyle(17, Colors.white, FontWeight.bold),
-                                      ),
-                                      SizedBox(width: 7.5),
-                                      Text(
-                                        "|",
-                                        style: fontStyle(17, Colors.white, FontWeight.bold),
-                                      ),
-                                      SizedBox(width: 7.5),
-                                      Text(
-                                        "Trending",
-                                        style: fontStyle(17, Colors.white, FontWeight.bold),
+                                      Row(
+                                        children: [
+                                          InkWell(
+                                            onTap: () => sharePost(content.data()['contentURL'], content.data()['id']),
+                                            child: Icon(
+                                              Icons.share_rounded,
+                                              color: Colors.white,
+                                              size: 30,
+                                            ),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            content.data()['shareCount'].toString(),
+                                            style: fontStyle(20, Colors.white),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
                                 ),
-
-                                // Bottom Section
-                                Expanded(
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.max,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      // Left Side
-                                      Expanded(
-                                        child: Container(
-                                          height: 70,
-                                          padding: EdgeInsets.only(left: 20),
-                                          margin: EdgeInsets.only(bottom: 5),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              Text(
-                                                content.data()['username'],
-                                                style: fontStyle(16, Colors.white, FontWeight.normal),
-                                              ),
-                                              Text(
-                                                content.data()['caption'],
-                                                style: fontStyle(16, Colors.white, FontWeight.normal),
-                                              ),
-                                              Row(
-                                                children: [
-                                                  Text(
-                                                    content.data()['category'],
-                                                    style: fontStyle(
-                                                        14, Colors.white, FontWeight.normal, FontStyle.italic),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-
-                                      // Right Side
-                                      Container(
-                                        width: 100,
-                                        margin: EdgeInsets.only(top: MediaQuery.of(context).size.height / 3),
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            buildProfile(content.data()['profilePicture']),
-                                            // Likes
-                                            Column(
-                                              children: [
-                                                InkWell(
-                                                  onTap: () => likePost(content.data()['id']),
-                                                  child: Icon(
-                                                    Icons.favorite,
-                                                    size: 30,
-                                                    color: content.data()['likes'].contains(uid)
-                                                        ? Colors.red
-                                                        : Colors.white,
-                                                  ),
-                                                ),
-                                                SizedBox(height: 7),
-                                                Text(
-                                                  content.data()['likes'].length.toString(),
-                                                  style: fontStyle(14, Colors.white),
-                                                ),
-                                              ],
-                                            ),
-                                            // Comments
-                                            Column(
-                                              children: [
-                                                InkWell(
-                                                  onTap: () => Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) => CommentsPage(
-                                                        content.data()['id'],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.comment,
-                                                    size: 30,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                                SizedBox(height: 7),
-                                                Text(
-                                                  content.data()['commentCount'].toString(),
-                                                  style: fontStyle(14, Colors.white),
-                                                ),
-                                              ],
-                                            ),
-                                            // Share
-                                            Column(
-                                              children: [
-                                                InkWell(
-                                                  onTap: () =>
-                                                      sharePost(content.data()['contentURL'], content.data()['id']),
-                                                  child: Icon(
-                                                    Icons.reply,
-                                                    size: 30,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                                SizedBox(height: 7),
-                                                Text(
-                                                  content.data()['shareCount'].toString(),
-                                                  style: fontStyle(14, Colors.white),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
                               ],
                             ),
-                          ],
+                          ),
                         ),
-                      );
-                    });
-              }),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );
